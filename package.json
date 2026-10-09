@@ -1,0 +1,11 @@
+{
+  "name": "agent-shootout",
+  "version": "1.0.0",
+  "description": "Same issue, three models - which one ships?",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
