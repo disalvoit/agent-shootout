@@ -12,7 +12,67 @@
  * @returns {string[][]}
  */
 export function parse(text, options = {}) {
-  throw new Error('parse() is not implemented yet');
+  const delimiter = options.delimiter ?? ',';
+  if (text.startsWith('\uFEFF')) {
+    text = text.slice(1);
+  }
+  if (text === '') {
+    return [];
+  }
+
+  const records = [];
+  let record = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (next === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === delimiter) {
+        record.push(field);
+        field = '';
+      } else if (ch === '\r' && next === '\n') {
+        record.push(field);
+        records.push(record);
+        record = [];
+        field = '';
+        i += 2;
+        continue;
+      } else if (ch === '\n' || ch === '\r') {
+        record.push(field);
+        records.push(record);
+        record = [];
+        field = '';
+      } else {
+        field += ch;
+      }
+    }
+    i++;
+  }
+
+  if (field !== '' || record.length > 0) {
+    record.push(field);
+    records.push(record);
+  }
+
+  return records;
 }
 
 /**
@@ -22,7 +82,23 @@ export function parse(text, options = {}) {
  * @returns {string}
  */
 export function stringify(rows, options = {}) {
-  throw new Error('stringify() is not implemented yet');
+  const delimiter = options.delimiter ?? ',';
+  const eol = options.eol ?? '\r\n';
+
+  const escapeField = (field) => {
+    const needsQuotes = field.includes(delimiter) ||
+      field.includes('"') ||
+      field.includes('\n') ||
+      field.includes('\r') ||
+      field.startsWith(' ') ||
+      field.endsWith(' ');
+    if (needsQuotes) {
+      return '"' + field.replace(/"/g, '""') + '"';
+    }
+    return field;
+  };
+
+  return rows.map(record => record.map(escapeField).join(delimiter)).join(eol) + (rows.length > 0 ? eol : '');
 }
 
 export default { parse, stringify };
